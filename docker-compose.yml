@@ -5,7 +5,31 @@ services:
     ports:
     - "8080:8080"
     depends_on:
-      - mysql
+    - mysql
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+    networks:
+    - web
+    environment:
+    - SERVICE_PORTS=8080
+
+  proxy:
+    image: dockercloud/haproxy
+    depends_on:
+    - java-app
+    environment:
+    - BALANCE=roundrobin
+    volumes:
+    - haproxy
+    ports:
+    - 80:80
+    networks:
+    - web
+    deploy:
+      placement:
+        constraints: [node.role == manager]
 
   mysql:
     image: mysql:5.7
@@ -14,9 +38,9 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: usbw
     volumes:
-      - mysql:/var/lib/mysql
+    - mysql:/var/lib/mysql
     ports:
-      - 3306:3306
+    - 3306:3306
 
   adminer:
     image: adminer
@@ -25,5 +49,8 @@ services:
     - 8082:8080
 networks:
   webnet:
+  web:
+    driver: overlay
 volumes:
   mysql:
+  haproxy:
